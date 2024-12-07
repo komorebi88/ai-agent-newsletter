@@ -26,7 +26,7 @@ class AIAgentNewsletterGenerator:
     def fetch_news(self) -> List[Dict]:
         news_items = []
         
-        # 1. HackerNews APIからの取得
+        # HackerNews APIからの取得
         try:
             hn_top = requests.get("https://hacker-news.firebaseio.com/v0/topstories.json")
             story_ids = hn_top.json()[:30]
@@ -44,7 +44,7 @@ class AIAgentNewsletterGenerator:
         except Exception as e:
             print(f"Error fetching from Hacker News: {str(e)}")
 
-        # 2. Reddit JSON APIからの取得
+        # Reddit JSON APIからの取得
         subreddits = ['artificial', 'MachineLearning', 'technews']
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
         
@@ -68,7 +68,7 @@ class AIAgentNewsletterGenerator:
             except Exception as e:
                 print(f"Error fetching from Reddit r/{subreddit}: {str(e)}")
 
-        # 3. DEV.to RSSフィードからの取得
+        # DEV.to RSSフィードからの取得
         try:
             dev_feed = feedparser.parse('https://dev.to/feed/tag/ai')
             for entry in dev_feed.entries[:10]:
@@ -81,33 +81,6 @@ class AIAgentNewsletterGenerator:
                     })
         except Exception as e:
             print(f"Error fetching from DEV.to: {str(e)}")
-
-        # 4. GitHubからの取得
-        try:
-            github_url = "https://github.com/topics/ai-agents"
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-            response = requests.get(github_url, headers=headers)
-            soup = BeautifulSoup(response.text, 'html.parser')
-            
-            repositories = soup.select("article.height-full")
-            
-            for repo in repositories[:5]:
-                title_elem = repo.select_one("h3")
-                if title_elem:
-                    link_elem = title_elem.select_one("a")
-                    if link_elem:
-                        title = title_elem.text.strip()
-                        url = f"https://github.com{link_elem['href']}"
-                        news_items.append({
-                            'title': title,
-                            'url': url,
-                            'source': 'GitHub',
-                            'date': datetime.now().strftime('%Y-%m-%d')
-                        })
-        except Exception as e:
-            print(f"Error fetching from GitHub: {str(e)}")
 
         return news_items
 
@@ -126,11 +99,6 @@ class AIAgentNewsletterGenerator:
 2. 重要なニュース3つを選んで技術的な観点から解説（各200字程度）
 3. 実装や開発に関する具体的な示唆を含める
 4. 各ニュースの参考URLを含める
-
-ポイント：
-- AIエージェントの技術的な進展に焦点を当てる
-- 実装や応用の観点から解説する
-- 技術者が参考にできる具体的な情報を含める
 """
 
         response = self.client.chat.completions.create(
@@ -146,61 +114,52 @@ class AIAgentNewsletterGenerator:
 
 class NewsletterAutomation:
     def __init__(self):
-        """環境変数から認証情報を取得"""
         self.gmail_address = os.getenv('GMAIL_ADDRESS')
         self.gmail_app_password = os.getenv('GMAIL_APP_PASSWORD')
         self.openai_api_key = os.getenv('OPENAI_API_KEY')
-        
-        # メールの送信先（自分自身のアドレスを使用）
         self.recipient_email = self.gmail_address
 
     def send_email(self, subject: str, body: str):
-    """メールを送信する"""
-    print(f"送信先メールアドレス: {self.recipient_email}")  # デバッグ用
-    
-    msg = MIMEMultipart()
-    msg['From'] = self.gmail_address
-    msg['To'] = self.recipient_email
-    msg['Subject'] = subject
+        """メールを送信する"""
+        print(f"送信先メールアドレス: {self.recipient_email}")  # デバッグ用
+        
+        msg = MIMEMultipart()
+        msg['From'] = self.gmail_address
+        msg['To'] = self.recipient_email
+        msg['Subject'] = subject
 
-    msg.attach(MIMEText(body, 'plain'))
+        msg.attach(MIMEText(body, 'plain'))
 
-    try:
-        print("SMTPサーバーに接続を開始します")  # デバッグ用
-        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-        print("ログインを試みます")  # デバッグ用
-        server.login(self.gmail_address, self.gmail_app_password)
-        print("メール送信を試みます")  # デバッグ用
-        server.send_message(msg)
-        server.quit()
-        print("メール送信完了")
-    except Exception as e:
-        print(f"メール送信エラーの詳細: {str(e)}")
-        raise  # エラーを再度発生させてGitHub Actionsのログに表示
+        try:
+            print("SMTPサーバーに接続を開始します")  # デバッグ用
+            server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+            print("ログインを試みます")  # デバッグ用
+            server.login(self.gmail_address, self.gmail_app_password)
+            print("メール送信を試みます")  # デバッグ用
+            server.send_message(msg)
+            server.quit()
+            print("メール送信完了")
+        except Exception as e:
+            print(f"メール送信エラーの詳細: {str(e)}")
+            raise
 
     def run_daily_newsletter(self):
         """ニュースレターの生成と送信を実行"""
         try:
-            # ニュースレター生成
             generator = AIAgentNewsletterGenerator(self.openai_api_key)
             news_items = generator.fetch_news()
             newsletter = generator.generate_newsletter(news_items)
 
-            # メールのタイトルと本文を作成
             today = datetime.now().strftime('%Y-%m-%d')
             subject = f"AI Agent ニュースレター - {today}"
             
-            # メール送信
             self.send_email(subject, newsletter)
-
-            # ログ出力
             print(f"ニュースレター生成完了: {today}")
             print(f"収集ニュース数: {len(news_items)}")
 
         except Exception as e:
             error_msg = f"ニュースレター生成エラー: {str(e)}"
             print(error_msg)
-            # エラー発生時もメールで通知
             self.send_email("AI Agent ニュースレター エラー通知", error_msg)
 
 def main():

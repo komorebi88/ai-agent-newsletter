@@ -155,22 +155,28 @@ class NewsletterAutomation:
         self.recipient_email = self.gmail_address
 
     def send_email(self, subject: str, body: str):
-        """メールを送信する"""
-        msg = MIMEMultipart()
-        msg['From'] = self.gmail_address
-        msg['To'] = self.recipient_email
-        msg['Subject'] = subject
+    """メールを送信する"""
+    print(f"送信先メールアドレス: {self.recipient_email}")  # デバッグ用
+    
+    msg = MIMEMultipart()
+    msg['From'] = self.gmail_address
+    msg['To'] = self.recipient_email
+    msg['Subject'] = subject
 
-        msg.attach(MIMEText(body, 'plain'))
+    msg.attach(MIMEText(body, 'plain'))
 
-        try:
-            server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-            server.login(self.gmail_address, self.gmail_app_password)
-            server.send_message(msg)
-            server.quit()
-            print("メール送信完了")
-        except Exception as e:
-            print(f"メール送信エラー: {str(e)}")
+    try:
+        print("SMTPサーバーに接続を開始します")  # デバッグ用
+        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        print("ログインを試みます")  # デバッグ用
+        server.login(self.gmail_address, self.gmail_app_password)
+        print("メール送信を試みます")  # デバッグ用
+        server.send_message(msg)
+        server.quit()
+        print("メール送信完了")
+    except Exception as e:
+        print(f"メール送信エラーの詳細: {str(e)}")
+        raise  # エラーを再度発生させてGitHub Actionsのログに表示
 
     def run_daily_newsletter(self):
         """ニュースレターの生成と送信を実行"""

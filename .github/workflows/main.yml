@@ -1,0 +1,29 @@
+name: Daily AI Newsletter
+
+on:
+  schedule:
+    - cron: '0 1 * * *'  # 毎日UTCの1:00（日本時間10:00）に実行
+  workflow_dispatch:  # 手動実行用
+
+jobs:
+  generate-newsletter:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+
+    - name: Run newsletter script
+      env:
+        GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+        GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      run: python newsletter_agent.py

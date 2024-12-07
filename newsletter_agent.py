@@ -118,10 +118,14 @@ class NewsletterAutomation:
         self.gmail_app_password = os.getenv('GMAIL_APP_PASSWORD')
         self.openai_api_key = os.getenv('OPENAI_API_KEY')
         self.recipient_email = self.gmail_address
+        
+        # デバッグ用に環境変数の値を確認（パスワードは最初の4文字のみ表示）
+        print(f"Gmail Address: {self.gmail_address}")
+        print(f"App Password (first 4 chars): {self.gmail_app_password[:4] if self.gmail_app_password else 'None'}")
+        print(f"OpenAI API Key (first 4 chars): {self.openai_api_key[:4] if self.openai_api_key else 'None'}")
 
     def send_email(self, subject: str, body: str):
-        """メールを送信する"""
-        print(f"送信先メールアドレス: {self.recipient_email}")  # デバッグ用
+        print(f"送信先メールアドレス: {self.recipient_email}")
         
         msg = MIMEMultipart()
         msg['From'] = self.gmail_address
@@ -131,11 +135,11 @@ class NewsletterAutomation:
         msg.attach(MIMEText(body, 'plain'))
 
         try:
-            print("SMTPサーバーに接続を開始します")  # デバッグ用
+            print("SMTPサーバーに接続を開始します")
             server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-            print("ログインを試みます")  # デバッグ用
+            print("ログインを試みます")
             server.login(self.gmail_address, self.gmail_app_password)
-            print("メール送信を試みます")  # デバッグ用
+            print("メール送信を試みます")
             server.send_message(msg)
             server.quit()
             print("メール送信完了")
@@ -144,10 +148,12 @@ class NewsletterAutomation:
             raise
 
     def run_daily_newsletter(self):
-        """ニュースレターの生成と送信を実行"""
         try:
+            print("ニュースレター生成を開始します")
             generator = AIAgentNewsletterGenerator(self.openai_api_key)
+            print("ニュース記事の取得を開始します")
             news_items = generator.fetch_news()
+            print(f"取得したニュース数: {len(news_items)}")
             newsletter = generator.generate_newsletter(news_items)
 
             today = datetime.now().strftime('%Y-%m-%d')
@@ -155,7 +161,6 @@ class NewsletterAutomation:
             
             self.send_email(subject, newsletter)
             print(f"ニュースレター生成完了: {today}")
-            print(f"収集ニュース数: {len(news_items)}")
 
         except Exception as e:
             error_msg = f"ニュースレター生成エラー: {str(e)}"
@@ -163,6 +168,7 @@ class NewsletterAutomation:
             self.send_email("AI Agent ニュースレター エラー通知", error_msg)
 
 def main():
+    print("プログラムを開始します")
     automation = NewsletterAutomation()
     automation.run_daily_newsletter()
 

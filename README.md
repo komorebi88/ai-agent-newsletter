@@ -1,8 +1,8 @@
 AI AGENT NEWSLETTER EVERYDAY
 
-Source Date
--HackerNews API
--Reddit JSON API
--DEV.to RSS
+Source Date: 
+HackerNews API
+Reddit JSON API
+DEV.to RSS
 
 LLM: OpenAI
